@@ -31,40 +31,8 @@ const imageSchema = new mongoose.Schema({
 
 const Image = mongoose.model('Image', imageSchema);
 
-app.post('/uploadPictures', upload.array('images'), async (req, res) => {
-  try {
-    const images = req.files;
-    if (!images || images.length === 0) {
-      return res.status(400).send('No images uploaded');
-    }
 
-    const imagePromises = images.map(async (file) => {
-      const newImage = new Image({
-        name: file.originalname,
-        data: file.buffer,
-        contentType: file.mimetype,
-      });
-      await newImage.save();
-      return newImage;
-    });
 
-    const savedImages = await Promise.all(imagePromises);
-    res.status(201).json(savedImages);
-  } catch (error) {
-    console.error('Error:', error);
-    res.status(500).send('Internal Server Error');
-  }
-});
-
-app.get('/displayImages', async (req, res) => {
-  try {
-    const images = await Image.find({});
-    res.json(images);
-  } catch (error) {
-    console.error('Error:', error);
-    res.status(500).send('Internal Server Error');
-  }
-});
 
 app.post('/upload', upload.single('file'), async (req, res) => {
   try {
@@ -116,11 +84,12 @@ app.get('/download', async (req, res) => {
     const collectionName = 'excel_collection';
     const collection = db.collection(collectionName);
 
+    // Assuming the actual field names in your MongoDB collection are 'rollNo', 'name', and 'sem'
     const data = await collection.find({}).toArray();
 
     const worksheet = [
       ['Roll No', 'Name', 'Sem'],
-      ...data.map(item => [item['roll no'], item['name'], item['sem']])
+      ...data.map(item => [item['RollNo'], item['Name'], item['Sem']])
     ];
 
     const sheet = xlsx.utils.aoa_to_sheet(worksheet);
@@ -138,6 +107,8 @@ app.get('/download', async (req, res) => {
     res.status(500).send('Internal Server Error');
   }
 });
+
+
 
 app.get('/download-format', async (req, res) => {
   try {
