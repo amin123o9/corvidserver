@@ -89,7 +89,7 @@ app.get('/download', async (req, res) => {
 
     const worksheet = [
       ['Roll No', 'Name', 'Sem'],
-      ...data.map(item => [item['RollNo'], item['Name'], item['Sem']])
+      ...data.map(item => [item['Roll No'], item['Name'], item['Sem']])
     ];
 
     const sheet = xlsx.utils.aoa_to_sheet(worksheet);
@@ -98,7 +98,7 @@ app.get('/download', async (req, res) => {
 
     const excelBuffer = xlsx.write(workbook, { bookType: 'xlsx', type: 'buffer' });
     res.set('Content-Disposition', 'attachment; filename="data.xlsx"');
-    res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.set('Content-Type','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.send(excelBuffer);
 
     await client.close();
