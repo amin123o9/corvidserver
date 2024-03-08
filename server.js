@@ -4,6 +4,7 @@ const xlsx = require('xlsx');
 const { MongoClient } = require('mongodb');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const { ObjectId } = require('mongodb');
 
 const app = express();
 const upload = multer({ dest: 'uploads/' });
@@ -12,6 +13,11 @@ const url = 'mongodb+srv://athrihegde:athrihegde@cluster0.7agvvhy.mongodb.net/?r
 
 app.use(express.json());
 app.use(cors());
+mongoose.connect(url, {
+  useNewUrlParser: true,
+  
+});
+
 
 mongoose.connect(url, {
   useNewUrlParser: true,
@@ -22,15 +28,6 @@ conn.on('error', console.error.bind(console, 'MongoDB connection error:'));
 conn.once('open', () => {
   console.log('Connected to MongoDB');
 });
-
-const imageSchema = new mongoose.Schema({
-  name: String,
-  data: Buffer,
-  contentType: String,
-});
-
-const Image = mongoose.model('Image', imageSchema);
-
 
 
 
@@ -84,7 +81,6 @@ app.get('/download', async (req, res) => {
     const collectionName = 'excel_collection';
     const collection = db.collection(collectionName);
 
-    // Assuming the actual field names in your MongoDB collection are 'rollNo', 'name', and 'sem'
     const data = await collection.find({}).toArray();
 
     const worksheet = [
@@ -108,8 +104,6 @@ app.get('/download', async (req, res) => {
   }
 });
 
-
-
 app.get('/download-format', async (req, res) => {
   try {
     const worksheet = [
@@ -124,6 +118,87 @@ app.get('/download-format', async (req, res) => {
     res.set('Content-Disposition', 'attachment; filename="excel_format.xlsx"');
     res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.send(excelBuffer);
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+app.delete('/delete/:id', async (req, res) => {
+  try {
+    const client = new MongoClient(url, { useUnifiedTopology: true });
+    await client.connect();
+
+    const dbName = 'excel_db';
+    const db = client.db(dbName);
+
+    const collectionName = 'excel_collection';
+    const collection = db.collection(collectionName);
+
+    const id = req.params.id;
+    const query = { _id: new ObjectId(id) }; // Use new ObjectId to create an instance of ObjectId
+
+    await collection.deleteOne(query);
+
+    const data = await collection.find({}).toArray();
+    res.json(data);
+
+    await client.close();
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+app.get('/fetch-data', async (req, res) => {
+  try {
+    const client = new MongoClient(url, { useUnifiedTopology: true });
+    await client.connect();
+
+    const dbName = 'excel_db';
+    const db = client.db(dbName);
+
+    const collectionName = 'excel_collection';
+    const collection = db.collection(collectionName);
+
+    const data = await collection.find({}).toArray();
+
+    res.json(data);
+
+    await client.close();
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+
+app.post('/save-edit', async (req, res) => {
+  try {
+    const client = new MongoClient(url, { useUnifiedTopology: true });
+    await client.connect();
+
+    const dbName = 'excel_db';
+    const db = client.db(dbName);
+
+    const collectionName = 'excel_collection';
+    const collection = db.collection(collectionName);
+
+    const editedData = req.body.editedData.map(row => ({
+      ...row,
+      _id: new ObjectId(row._id), // Use new ObjectId to create an instance of ObjectId
+    }));
+
+    await Promise.all(editedData.map(async row => {
+      const filter = { _id: row._id };
+      const update = { $set: row };
+      await collection.updateOne(filter, update);
+    }));
+
+    const data = await collection.find({}).toArray();
+    res.json(data);
+
+    await client.close();
   } catch (error) {
     console.error('Error:', error);
     res.status(500).send('Internal Server Error');
