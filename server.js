@@ -12,7 +12,12 @@ const upload = multer({ dest: 'uploads/' });
 const url = 'mongodb+srv://athrihegde:athrihegde@cluster0.7agvvhy.mongodb.net/?retryWrites=true&w=majority';
 
 app.use(express.json());
-app.use(cors());
+const corsOptions = {
+    origin: 'https://corvids-technology.vercel.app', // specific origin
+    credentials: true // allow credentials (cookies, authorization headers, etc.)
+  };
+  
+  app.use(cors(corsOptions));
 mongoose.connect(url, {
   useNewUrlParser: true,
   
